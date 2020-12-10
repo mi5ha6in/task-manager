@@ -30,4 +30,6 @@ for (let i = 1; i < TASK_COUNT; i++) {
   render(taskListElement, createTaskTemplate(tasks[i]), `beforeend`);
 }
 
-render(boardElement, createLoadMoreButtonTemplate(), `.beforeend`);
+render(boardElement, createLoadMoreButtonTemplate(), `beforeend`);
+
+
