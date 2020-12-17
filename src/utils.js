@@ -1,3 +1,30 @@
+export const RenderPosition = {
+  AFTERBEGIN: `afterbegin`,
+  BEFOREEND: `beforeend`
+};
+
+export const renderElement = (continer, element, place) => {
+  switch (place) {
+    case RenderPosition.AFTERBEGIN:
+      continer.prepend(element);
+      break;
+    case RenderPosition.BEFOREEND:
+      continer.append(element);
+      break;
+  }
+};
+
+export const renderTemplate = (container, template, place) => {
+  container.insertAdjacentHTML(place, template);
+};
+
+export const createElement = (template) => {
+  const newElement = document.createElement(`div`);
+  newElement.innerHTML = template;
+
+  return newElement.firstChild;
+};
+
 import dayjs from "dayjs";
 
 export const getRandomInteger = (a = 0, b = 1) => {
