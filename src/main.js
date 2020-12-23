@@ -61,13 +61,6 @@ const renderBoard = (boardContainer, boardTasks) => {
   render(boardContainer, boardComponent.getElement(), RenderPosition.BEFOREEND);
   render(boardComponent.getElement(), taskListComponent.getElement(), RenderPosition.BEFOREEND);
 
-  // По условию заглушка должна показываться,
-  // когда нет задач или все задачи в архиве.
-  // Мы могли бы написать:
-  // tasks.length === 0 || tasks.every((task) => task.isArchive)
-  // Но благодаря тому, что на пустом массиве every вернёт true,
-  // мы можем опустить "tasks.length === 0".
-  // p.s. А метод some на пустом массиве наборот вернет false
   if (boardTasks.every((task) => task.isArchive)) {
     render(boardComponent.getElement(), new NoTaskView().getElement(), RenderPosition.AFTERBEGIN);
     return;
