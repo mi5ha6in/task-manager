@@ -4,7 +4,7 @@ import {createLoadMoreButtonTemplate} from "./components/load-more-button.js";
 import {createTaskEditTemplate} from "./components/task-edit.js";
 import {createTaskTemplate} from "./components/task.js";
 import {createSiteMenuTemplate} from "./components/site-menu.js";
-import {createSortingTemplate} from "./components/sorting.js";
+import {createSortingTemplate} from "./components/sort.js";
 import {generateFilters} from "./mock/filter.js";
 import {generateTasks} from "./mock/task.js";
 
