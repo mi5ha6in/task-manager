@@ -42,6 +42,7 @@ export default class BoardController {
   constructor(container, tasksModel) {
     this._container = container;
     this._tasksModel = tasksModel;
+
     this._showedTaskControllers = [];
     this._showingTasksCount = SHOWING_TASKS_COUNT_ON_START;
     this._noTasksComponent = new NoTasksComponent();
@@ -52,12 +53,13 @@ export default class BoardController {
     this._onDataChange = this._onDataChange.bind(this);
     this._onSortTypeChange = this._onSortTypeChange.bind(this);
     this._onViewChange = this._onViewChange.bind(this);
+    this._onFilterChange = this._onFilterChange.bind(this);
 
     this._sortComponent.setSortTypeChangeHandler(this._onSortTypeChange);
+    this._tasksModel.setFilterChangeHandler(this._onFilterChange);
   }
 
   render() {
-
     const container = this._container.getElement();
     const tasks = this._tasksModel.getTasks();
     const isAllTasksArchived = tasks.every((task) => task.isArchive);
@@ -71,8 +73,13 @@ export default class BoardController {
     render(container, this._tasksComponent, RenderPosition.BEFOREEND);
 
     this._renderTasks(tasks.slice(0, this._showingTasksCount));
-    this._renderLoadMoreButton();
 
+    this._renderLoadMoreButton();
+  }
+
+  _removeTasks() {
+    this._showedTaskControllers.forEach((taskController) => taskController.destroy());
+    this._showedTaskControllers = [];
   }
 
   _renderTasks(tasks) {
@@ -82,6 +89,7 @@ export default class BoardController {
     this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
     this._showingTasksCount = this._showedTaskControllers.length;
   }
+
 
   _renderLoadMoreButton() {
     remove(this._loadMoreButtonComponent);
@@ -103,11 +111,13 @@ export default class BoardController {
       const newTasks = renderTasks(taskListElement, sortedTasks, this._onDataChange, this._onViewChange);
 
       this._showedTaskControllers = this._showedTaskControllers.concat(newTasks);
-
-      if (this._showingTasksCount >= this._tasks.length) {
-        remove(this._loadMoreButtonComponent);
-      }
     });
+  }
+
+  _updateTasks(count) {
+    this._removeTasks();
+    this._renderTasks(this._tasksModel.getTasks().slice(0, count));
+    this._renderLoadMoreButton();
   }
 
   _onDataChange(taskController, oldData, newData) {
@@ -134,5 +144,9 @@ export default class BoardController {
     this._showedTaskControllers = newTasks;
 
     this._renderLoadMoreButton();
+  }
+
+  _onFilterChange() {
+    this._updateTasks(SHOWING_TASKS_COUNT_ON_START);
   }
 }
