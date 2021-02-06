@@ -1,101 +1,61 @@
-import SiteMenuView from "./view/site-menu.js";
-import FilterView from "./view/filter.js";
-import TaskView from "./view/task.js";
-import TaskEditView from "./view/task-edit.js";
-import LoadMoreButtonView from "./view/load-more-button.js";
-import BoardView from "./view/board.js";
-import SortView from "./view/sort.js";
-import TaskListView from "./view/task-list.js";
-import NoTaskView from "./view/no-task.js";
-import {generateTask} from "./mock/task.js";
-import {generateFilter} from "./mock/filter.js";
-import {render, RenderPosition} from "./utils.js";
+import API from "./api.js";
+import BoardComponent from "./components/board.js";
+import BoardController from "./controllers/board.js";
+import FilterController from "./controllers/filter.js";
+import SiteMenuComponent, {MenuItem} from "./components/site-menu.js";
+import StatisticsComponent from "./components/statistics.js";
+import TasksModel from "./models/tasks.js";
+import {render, RenderPosition} from "./utils/render.js";
 
-const TASK_COUNT = 22;
-const TASK_COUNT_PER_STEP = 8;
+const AUTHORIZATION = `Basic dXNafgBwYXNzd29yZAo=`;
+const END_POINT = `https://11.ecmascript.pages.academy/task-manager`;
 
-const tasks = new Array(TASK_COUNT).fill().map(generateTask);
-const filters = generateFilter(tasks);
+const dateTo = new Date();
+const dateFrom = (() => {
+  const d = new Date(dateTo);
+  d.setDate(d.getDate() - 7);
+  return d;
+})();
+
+const api = new API(END_POINT, AUTHORIZATION);
+const tasksModel = new TasksModel();
 
 const siteMainElement = document.querySelector(`.main`);
 const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
+const siteMenuComponent = new SiteMenuComponent();
+const statisticsComponent = new StatisticsComponent({tasks: tasksModel, dateFrom, dateTo});
 
-const renderTask = (taskListElement, task) => {
-  const taskComponent = new TaskView(task);
-  const taskEditComponent = new TaskEditView(task);
+const boardComponent = new BoardComponent();
+const boardController = new BoardController(boardComponent, tasksModel, api);
+const filterController = new FilterController(siteMainElement, tasksModel);
 
-  const replaceCardToForm = () => {
-    taskListElement.replaceChild(taskEditComponent.getElement(), taskComponent.getElement());
-  };
+render(siteHeaderElement, siteMenuComponent, RenderPosition.BEFOREEND);
+filterController.render();
+render(siteMainElement, boardComponent, RenderPosition.BEFOREEND);
+render(siteMainElement, statisticsComponent, RenderPosition.BEFOREEND);
+statisticsComponent.hide();
 
-  const replaceFormToCard = () => {
-    taskListElement.replaceChild(taskComponent.getElement(), taskEditComponent.getElement());
-  };
-
-  const onEscKeyDown = (evt) => {
-    if (evt.key === `Escape` || evt.key === `Esc`) {
-      evt.preventDefault();
-      replaceFormToCard();
-      document.removeEventListener(`keydown`, onEscKeyDown);
-    }
-  };
-
-  taskComponent.getElement().querySelector(`.card__btn--edit`).addEventListener(`click`, () => {
-    replaceCardToForm();
-    document.addEventListener(`keydown`, onEscKeyDown);
-  });
-
-  taskEditComponent.getElement().querySelector(`form`).addEventListener(`submit`, (evt) => {
-    evt.preventDefault();
-    replaceFormToCard();
-    document.removeEventListener(`keydown`, onEscKeyDown);
-  });
-
-  render(taskListElement, taskComponent.getElement(), RenderPosition.BEFOREEND);
-};
-
-const renderBoard = (boardContainer, boardTasks) => {
-  const boardComponent = new BoardView();
-  const taskListComponent = new TaskListView();
-
-  render(boardContainer, boardComponent.getElement(), RenderPosition.BEFOREEND);
-  render(boardComponent.getElement(), taskListComponent.getElement(), RenderPosition.BEFOREEND);
-
-  if (boardTasks.every((task) => task.isArchive)) {
-    render(boardComponent.getElement(), new NoTaskView().getElement(), RenderPosition.AFTERBEGIN);
-    return;
+siteMenuComponent.setOnChange((menuItem) => {
+  switch (menuItem) {
+    case MenuItem.NEW_TASK:
+      siteMenuComponent.setActiveItem(MenuItem.TASKS);
+      statisticsComponent.hide();
+      boardController.show();
+      boardController.createTask();
+      break;
+    case MenuItem.STATISTICS:
+      boardController.hide();
+      statisticsComponent.show();
+      break;
+    case MenuItem.TASKS:
+      statisticsComponent.hide();
+      boardController.show();
+      break;
   }
+});
 
-  render(boardComponent.getElement(), new SortView().getElement(), RenderPosition.AFTERBEGIN);
-
-  boardTasks
-    .slice(0, Math.min(tasks.length, TASK_COUNT_PER_STEP))
-    .forEach((boardTask) => renderTask(taskListComponent.getElement(), boardTask));
-
-  if (boardTasks.length > TASK_COUNT_PER_STEP) {
-    let renderedTaskCount = TASK_COUNT_PER_STEP;
-
-    const loadMoreButtonComponent = new LoadMoreButtonView();
-
-    render(boardComponent.getElement(), loadMoreButtonComponent.getElement(), RenderPosition.BEFOREEND);
-
-    loadMoreButtonComponent.getElement().addEventListener(`click`, (evt) => {
-      evt.preventDefault();
-      boardTasks
-        .slice(renderedTaskCount, renderedTaskCount + TASK_COUNT_PER_STEP)
-        .forEach((boardTask) => renderTask(taskListComponent.getElement(), boardTask));
-
-      renderedTaskCount += TASK_COUNT_PER_STEP;
-
-      if (renderedTaskCount >= boardTasks.length) {
-        loadMoreButtonComponent.getElement().remove();
-        loadMoreButtonComponent.removeElement();
-      }
-    });
-  }
-};
-
-render(siteHeaderElement, new SiteMenuView().getElement(), RenderPosition.BEFOREEND);
-render(siteMainElement, new FilterView(filters).getElement(), RenderPosition.BEFOREEND);
-
-renderBoard(siteMainElement, tasks);
+api.getTasks()
+  .then((tasks) => {
+    tasksModel.setTasks(tasks);
+    boardController.render();
+  });
